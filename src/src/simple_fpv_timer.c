@@ -298,6 +298,7 @@ void sft_on_drone_passed_ctf(ctx_t *ctx, int freq, int rssi, millis_t abs_time_m
     int idx = 0;
     ctf_team_t *my_team = NULL;
     config_rssi_t *my_rssi = NULL;
+    ctf_flag_t *flag = &ctx->ctf.flags[0];
 
     int count_drone_in = 0;
     for (idx = 0; idx < CFG_MAX_FREQ; idx++) {
@@ -306,7 +307,7 @@ void sft_on_drone_passed_ctf(ctx_t *ctx, int freq, int rssi, millis_t abs_time_m
         if (tmp->freq == 0)
             continue;
 
-        ctf_team_t *team = &ctx->ctf.teams[idx];
+        ctf_team_t *team = &flag->teams[idx];
         if (tmp->freq == freq) {
             my_team = team;
             my_rssi = tmp;
@@ -320,12 +321,12 @@ void sft_on_drone_passed_ctf(ctx_t *ctx, int freq, int rssi, millis_t abs_time_m
 
     if(my_team && xSemaphoreTake(ctx->sem, ( TickType_t ) 10 ) == pdTRUE ) {
         if (count_drone_in == 0) {
-            if (ctx->ctf.current != my_team){
-                ctx->ctf.current = my_team;
+            if (flag->current != my_team){
+                flag->current = my_team;
                 sft_emit_led_static(ctx, my_rssi->led_color);
             }
         } else {
-            ctx->ctf.current = NULL;
+            flag->current = NULL;
             sft_emit_led_blink(ctx, my_rssi->led_color);
         }
         xSemaphoreGive(ctx->sem);
@@ -354,10 +355,10 @@ void sft_on_drone_enter_ctf(ctx_t *ctx, int freq, int rssi, millis_t abs_time_ms
     millis_t now = get_millis();
     config_rssi_t *my_rssi = NULL;
     ctf_team_t *my_team = NULL;
+    ctf_flag_t *flag = &ctx->ctf.flags[0];
     int count_drone_in = 0;
 
     ESP_LOGI(TAG, "%s - ENTER", __func__);
-
 
     for (idx = 0; idx < CFG_MAX_FREQ; idx++) {
         config_rssi_t *tmp = &cfg->running.rssi[idx];
@@ -365,7 +366,7 @@ void sft_on_drone_enter_ctf(ctx_t *ctx, int freq, int rssi, millis_t abs_time_ms
         if (tmp->freq == 0)
             continue;
 
-        ctf_team_t *team = &ctx->ctf.teams[idx];
+        ctf_team_t *team = &flag->teams[idx];
 
         if (tmp->freq == freq) {
             my_team = team;
@@ -381,12 +382,12 @@ void sft_on_drone_enter_ctf(ctx_t *ctx, int freq, int rssi, millis_t abs_time_ms
 
     if(my_team && xSemaphoreTake(ctx->sem, ( TickType_t ) 10 ) == pdTRUE ) {
         if (count_drone_in == 1) {
-            if (ctx->ctf.current != my_team){
-                ctx->ctf.current = my_team;
+            if (flag->current != my_team){
+                flag->current = my_team;
                 sft_emit_led_static(ctx, my_rssi->led_color);
             }
         } else {
-            ctx->ctf.current = NULL;
+            flag->current = NULL;
             sft_emit_led_blink(ctx, my_rssi->led_color);
         }
         xSemaphoreGive(ctx->sem);
@@ -417,13 +418,20 @@ void sft_race_mode_init(ctx_t *ctx)
     strcpy(ctx->lc.players[0].name, ctx->cfg.running.rssi[0].name);
 }
 
+static void sft_ctf_send_status_update(ctx)
+{
+
+}
+
 static void sft_ctf_on_timer(void* arg)
 {
     ctx_t *ctx = (ctx_t*) arg;
 
     if( xSemaphoreTake(ctx->sem, ( TickType_t ) 10 ) == pdTRUE ) {
-        if (ctx->ctf.current) {
-            ctx->ctf.current->captured_ms+=1000;
+        if (ctx->ctf.flags[0].current) {
+            ctx->ctf.flags[0].current->captured_ms+=1000;
+
+            sft_ctf_send_status_update(ctx);
         }
         xSemaphoreGive(ctx->sem);
     }

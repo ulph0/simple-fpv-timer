@@ -159,6 +159,7 @@ void cfg_generate_random_ssid(char *buf, size_t len)
     snprintf(buf, len, "simple-fpv-timer-%02X", (int)(esp_random() % 0xff));
 }
 
+
 esp_err_t cfg_load(struct config *cfg)
 {
     nvs_handle_t my_handle;

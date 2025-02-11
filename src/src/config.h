@@ -23,6 +23,10 @@
 #define CFG_LED_MODE_PATTERN_1  2
 
 #define CFG_MAX_FREQ            8
+#define CFG_MAX_NAME_LEN        32
+#define CFG_MAX_PASSPHRASE_LEN  32
+#define CFG_MAX_SSID_LEN        32
+#define CFG_MAX_OSD_FORMAT_LEN  32
 
 typedef enum { CFG_WIFI_AP = 0, CFG_WIFI_STA = 1} cfg_wifi_mode_enum;
 typedef struct config_rssi config_rssi_t;
@@ -41,23 +45,23 @@ struct config_rssi {
 
     uint32_t led_color; /* used for capture the flag team LED color */
 
-    char name[32];
+    char name[CFG_MAX_NAME_LEN];
 };
 
 struct config_data {
     char magic[4];
+    char name[CFG_MAX_NAME_LEN];
 
     config_rssi_t rssi[CFG_MAX_FREQ];
-
 
     uint8_t elrs_uid[6];
     uint16_t osd_x;
     uint16_t osd_y;
-    char osd_format[32];
+    char osd_format[CFG_MAX_OSD_FORMAT_LEN];
 
     uint16_t wifi_mode;
-    char ssid[32];
-    char passphrase[32];
+    char ssid[CFG_MAX_SSID_LEN];
+    char passphrase[CFG_MAX_PASSPHRASE_LEN];
 
     uint16_t game_mode;
 

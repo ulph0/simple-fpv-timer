@@ -127,10 +127,14 @@ typedef struct {
     millis_t captured_ms;
 } ctf_team_t;
 
-typedef struct cft_s {
+typedef struct {
     ctf_team_t *current;
     ctf_team_t teams[MAX_PLAYER];
+    ip4_addr_t ipv4;
+} ctf_flag_t;
 
+typedef struct cft_s {
+    ctf_flag_t flags[MAX_PLAYER];
     esp_timer_handle_t timer;
 } ctf_t;
 
@@ -146,6 +150,7 @@ typedef struct {
     led_t led;
 
     ip4_addr_t server_ipv4;
+    ip4_addr_t clients_ipv4[MAX_PLAYER];
 } ctx_t;
 
 
