@@ -23,7 +23,8 @@ static esp_err_t task_rssi_next_channel(task_rssi_t *tsk);
 static void task_rssi_set_config(task_rssi_t *tsk, const config_data_t *cfg)
 {
     ESP_LOGI(TAG, "%s - ENTER", __func__);
-
+    ESP_LOGI(TAG, "GAME MODE: %d", CFG_GAME_MODE_SPECTRUM);
+    ESP_LOGI(TAG, "MAX FREQ: %d", CFG_MAX_FREQ);
     for (int i=0; i< CFG_MAX_FREQ; i++)
         printf("%d ", cfg->rssi[i].freq);
 
@@ -133,7 +134,7 @@ static void task_rssi_process_rssi(task_rssi_t *tsk, sft_timer_t *gate_blocked, 
             !rssi->drone_in_gate) {
         ESP_LOGI(TAG, "Drone enter gate! rssi: %d", rssi->smoothed);
         timer_start(gate_blocked, COLLECT_MIN, NULL, NULL);
-        rssi->drone_in_gate = true;
+        rssi->ddocumentationrone_in_gate = true;
         rssi->in_gate_peak_rssi = rssi->smoothed;
         rssi->in_gate_peak_millis = get_millis();
 
@@ -243,6 +244,18 @@ static esp_err_t task_rssi_set_channel(task_rssi_t *tsk, rssi_t *rssi)
         return e;
     }
 
+    // A loop to read RSSI values two times to get a stable value
+    // Alternative: Wait some ticks
+    // vTaskDelay(pdMS_TO_TICKS(10)); <- 10 is not, 20 seems to be enough
+    /* 
+    int adc_raw = 0;
+    int voltage = 0;
+    for (int i = 0; i < 2; i++) {
+        rx5808_read_rssi(&tsk->rx5808, &adc_raw, &voltage);
+    }
+    */
+    vTaskDelay(pdMS_TO_TICKS(20));
+
     tsk->rssi = rssi;
     return ESP_OK;
 }
@@ -313,11 +326,18 @@ void task_rssi( void * priv )
 
         read_cnt++;
         rx5808_read_rssi(&tsk->rx5808, &adc_raw, &voltage);
+        ESP_LOGI(TAG, "ADC_RAW: %d VOLTAGE: %d FREQ: %d", adc_raw, voltage, tsk->rssi->freq);
+
+
         ms = get_millis();
         task_rssi_process_rssi(tsk, &gate_blocked, voltage);
         task_rssi_collect_rssi(tsk, ms);
 
-        if (tsk->rssi_cnt > 1 && change_channel_counter++ > 10) {
+        /* for spectrum mode we could reduce the 10 to change the freq/channel more */
+        /* often, but the first at least 2 rssi values are lower then the real ones */
+        /* due to signal stabilization maybe a fitting antenna could help */
+        /* orig: if (tsk->rssi_cnt > 1 && change_channel_counter++ > 10) { */
+            if (tsk->rssi_cnt > 1 && ++change_channel_counter > 2) {
             ESP_ERROR_CHECK_WITHOUT_ABORT(task_rssi_next_channel(tsk));
             change_channel_counter = 0;
         }
@@ -341,6 +361,7 @@ void task_rssi_init(const ctx_t *ctx)
     static task_rssi_t tsk;
 
     memset (&tsk, 0, sizeof(tsk));
+    ESP_LOGI("task_rssi_init", "Initializing task_rssi");
 
     task_rssi_set_config(&tsk, &ctx->cfg.eeprom);
 
