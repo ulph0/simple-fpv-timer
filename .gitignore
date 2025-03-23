@@ -13,3 +13,4 @@ __pycache__
 src/server/config.json
 tools/config.json
 src/.cache
+src/.vscode
