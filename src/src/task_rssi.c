@@ -254,7 +254,7 @@ static esp_err_t task_rssi_set_channel(task_rssi_t *tsk, rssi_t *rssi)
         rx5808_read_rssi(&tsk->rx5808, &adc_raw, &voltage);
     }
     */
-    vTaskDelay(pdMS_TO_TICKS(20));
+    //vTaskDelay(pdMS_TO_TICKS(20));
 
     tsk->rssi = rssi;
     return ESP_OK;

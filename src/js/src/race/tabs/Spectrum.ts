@@ -61,26 +61,3 @@ export class SpectrumPage extends Page {
 
     }
 }
-
-
-
-/* const raceMode = new RaceMode ("Race")
-raceMode.addPage(new DebugPage());
-
-const ctfMode = new CaptureTheFlagMode("CTF");
-ctfMode.addPage(new DebugPage());
-*/
-const spectrumMode = new SpectrumMode("Spectrum");
-spectrumMode.addPage(new SpectrumPage());
-
-const app = new SimpleFpvTimer();
-app.addMode(ConfigGameMode.SPECTRUM, spectrumMode);
-
-van.add(document.body, app.getDom());
-const notifications = new Notifications();
-
-TimeSync.instance().sync_time(null);
-setTimeout(() => {
-    console.debug("TimeSync offset: " + TimeSync.getOffset());
-    }, 2000);
-
