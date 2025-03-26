@@ -1,17 +1,17 @@
-import { SimpleFpvTimer, Mode, Page, RssiEvent, ConfigGameMode, Config } from "./SimpleFpvTimer.js"
-import van from "./lib/van-1.5.2.js"
-import "./lib/bootstrap.bundle.js"
-import { RaceMode } from "./race/RaceMode.js"
-import { Notifications } from "./Notifications.js"
-import { TimeSync } from "./TimeSync.js"
-import { CaptureTheFlagMode } from "./ctf/CaptureTheFlagMode.js"
-import { TestuPlot } from "./race/tabs/TestuPlot.js"
-import { SpectrumMode } from "./spectrum/SpectrumMode.js"
+import { SimpleFpvTimer, Mode, Page, RssiEvent, ConfigGameMode, Config } from "../../SimpleFpvTimer.js"
+import van from "../../lib/van-1.5.2.js"
+import "../../lib/bootstrap.bundle.js"
+import { RaceMode } from "../../race/RaceMode.js"
+import { Notifications } from "../../Notifications.js"
+import { TimeSync } from "../../TimeSync.js"
+import { CaptureTheFlagMode } from "../../ctf/CaptureTheFlagMode.js"
+import { TestuPlot } from "../../race/tabs/TestuPlot.js"
+import { SpectrumMode } from "../../spectrum/SpectrumMode.js"
 
 const {button, div, pre,h3} = van.tags
 
 
-class DebugPage extends Page {
+export class SpectrumPage extends Page {
     root: HTMLElement;
     _cfg: HTMLElement;
     _rssi: HTMLElement;
@@ -42,7 +42,7 @@ class DebugPage extends Page {
     }
 
     constructor() {
-        super("DEBUG");
+        super("Spectrum");
         this.getDom();
 
         document.addEventListener("SFT_RSSI", (e: CustomEventInit<RssiEvent>) => {
@@ -59,31 +59,21 @@ class DebugPage extends Page {
             );
         });
 
-        document.addEventListener("SFT_CTF_UPDATE", (e: CustomEventInit<Ctf>) => {
-            this.ctf.replaceChildren(
-                h3("Last CTF message:" + Date.now()),
-                pre(e.detail.toJsonString(2))
-            );
-        });
-
-
     }
 }
 
 
 
-const raceMode = new RaceMode ("Race");
+/* const raceMode = new RaceMode ("Race")
 raceMode.addPage(new DebugPage());
 
 const ctfMode = new CaptureTheFlagMode("CTF");
 ctfMode.addPage(new DebugPage());
-
+*/
 const spectrumMode = new SpectrumMode("Spectrum");
-spectrumMode.addPage(new DebugPage());
+spectrumMode.addPage(new SpectrumPage());
 
 const app = new SimpleFpvTimer();
-app.addMode(ConfigGameMode.RACE, raceMode);
-app.addMode(ConfigGameMode.CTF, ctfMode);
 app.addMode(ConfigGameMode.SPECTRUM, spectrumMode);
 
 van.add(document.body, app.getDom());

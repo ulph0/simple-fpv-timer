@@ -1,6 +1,7 @@
 import { Mode } from "../SimpleFpvTimer.js";
 import { RaceConfigPage } from "../race/tabs/Config.js";
 import { SignalPage } from "../race/tabs/Signal.js";
+import { SpectrumPage } from "../race/tabs/Spectrum.js";
 
 export class SpectrumMode extends Mode {
 
@@ -9,5 +10,6 @@ export class SpectrumMode extends Mode {
 
         this.pages.push(new RaceConfigPage());
         this.pages.push(new SignalPage());
+        this.pages.push(new SpectrumPage());
     }
 }

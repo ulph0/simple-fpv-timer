@@ -538,9 +538,11 @@ void sft_event_rssi_update(void* arg, esp_event_base_t base, int32_t id, void* e
     char *buf;
     json_writer_t *jw;
 
-    if (!ctx->send_rssi_updates) {
-        return;
-    }
+    /* commented out to alwys get RSSI updates
+        if (!ctx->send_rssi_updates) {
+            return;
+        }
+    */
 
     if (!(buf = malloc(512))) {
         ESP_LOGE(TAG, "RSSI update - out of memory!");
@@ -550,6 +552,7 @@ void sft_event_rssi_update(void* arg, esp_event_base_t base, int32_t id, void* e
     jw = (json_writer_t*) buf;
     jw_init(jw, buf + sizeof(json_writer_t), 512 - sizeof(json_writer_t));
 
+    // JSON writer builds object
     jw_object(jw){
         jw_kv_str(jw, "type", "rssi");
         jw_kv_int(jw, "freq", ev->freq);
@@ -567,6 +570,7 @@ void sft_event_rssi_update(void* arg, esp_event_base_t base, int32_t id, void* e
         }
     }
 
+    // sends data to all websock clients
     gui_send_all(ctx, jw->buf);
     free(buf);
 }

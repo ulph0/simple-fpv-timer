@@ -134,7 +134,7 @@ static void task_rssi_process_rssi(task_rssi_t *tsk, sft_timer_t *gate_blocked, 
             !rssi->drone_in_gate) {
         ESP_LOGI(TAG, "Drone enter gate! rssi: %d", rssi->smoothed);
         timer_start(gate_blocked, COLLECT_MIN, NULL, NULL);
-        rssi->ddocumentationrone_in_gate = true;
+        rssi->drone_in_gate = true;
         rssi->in_gate_peak_rssi = rssi->smoothed;
         rssi->in_gate_peak_millis = get_millis();
 

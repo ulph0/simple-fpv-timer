@@ -47,6 +47,7 @@ typedef struct {
     config_data_t cfg;
 } sft_event_cfg_changed_t;
 
+// 
 #define SFT_RSSI_UPDATE_MAX 32
 typedef struct {
     int cnt;
