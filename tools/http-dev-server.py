@@ -177,6 +177,7 @@ config = {
     "node_name": "",
     "node_mode": 0,
     "ctrl_ipv4": "0.0.0.0",
+    "ctrl_port": 9090,
 
     #"game_mode": 0,
      "game_mode": 1,
@@ -372,8 +373,20 @@ class WSHandler(WebsocketHandler):
             }))
             self.ctf_ctx['time'] = time.time();
 
-
-
+    def random_spectrum_update(self, session):
+        data = []
+        data.append({
+                't': int(time.time() * 1000),
+                'r': randrange(500, 1200),
+                's': randrange(500, 1200),
+                'i': False
+                })
+        json_data = {
+                'type': "rssi",
+                'freq': ctx.config["rssi[0].freq"],
+                'data': data,
+            }
+        session.send_text(json.dumps(json_data))
 
     async def periodic(self, session):
         try:
@@ -384,6 +397,9 @@ class WSHandler(WebsocketHandler):
 
                 elif ctx.config['game_mode'] == 1: # CTF
                     self.random_ctf_update(session);
+
+                elif ctx.config['game_mode'] == 2: # SPECTRUM
+                    self.random_spectrum_update(session);
 
         except Exception as e:
             print (e)
@@ -475,11 +491,11 @@ def handle_api_v1_settings():
 def handle_api_v1_settings(json=JSONBody()):
     for key in json:
         print("KEY:{}".format(key))
-        if key in ctx.config:
+        if key in config:
             print("{} = {} of {}".format(key, json[key], type(json[key])))
             ctx.config[key] = int(json[key]) if  json[key].isnumeric() else json[key];
         else:
-            return {"status": "error", "msg": "Invalid key/value pair"}
+            return {"status": "error", "msg": "Invalid key/value pair - unkown key {}".format(key)}
 
 
     save_config(ctx.config);
