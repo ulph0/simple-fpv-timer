@@ -1,8 +1,9 @@
 import van from "../../lib/van-1.5.2.js"
+import { Notifications } from "../../Notifications.js";
 import { Lap, Page, Player } from "../../SimpleFpvTimer.js";
 import { $, enumToMap, format_ms } from "../../utils.js";
 
-const { h3,label, select, option, button, div, h5, pre, ul, li, span, a, table, thead, tbody, th, tr,td} = van.tags
+const { h3,label, select, option, button, div, h5, input, pre, ul, li, span, a, table, thead, tbody, th, tr,td} = van.tags
 
 enum RaceMode {
     OneLap,
@@ -154,7 +155,27 @@ export class PlayersPage extends Page {
 
     private async startRace() {
         const url = "/api/v1/clear_laps";
-        await fetch(url);
+        const input_offset = $('input_start_race_offset') as HTMLInputElement;
+        var offset = 30000;
+        if (input_offset) {
+            if (!Number.isNaN(Number(input_offset.value)))
+                offset = Number(input_offset.value) * 1000;
+        }
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                    'Content-Type': 'application/json; charset=utf-8'
+            },
+            body: JSON.stringify({offset: offset})
+        });
+        if (!response.ok) {
+            Notifications.showError({msg: `Failed to save config ${response.status}`})
+        } else {
+            document.dispatchEvent(
+                new CustomEvent("SFT_PLAYERS_UPDATE", {detail: new Array<Player>()})
+            );
+            Notifications.showSuccess({msg: "Laps cleared, 🏁🏁🏁 RACE 🏁🏁🏁"});
+        }
     }
 
     getActionsDom(): HTMLElement {
@@ -181,9 +202,14 @@ export class PlayersPage extends Page {
                 ),
 
                 div({class: "mb-3", style: "margin: 5px 3px"},
-                    button({class: "btn btn-primary", type: "button", onclick: () => {
-                        this.startRace();
-                    }}, "Start Race!")
+                    div({class: "input-group flex-nowrap"},
+                        button({class: "btn btn-primary", type: "button", onclick: () => {
+                            this.startRace();
+                        }}, "Start Race"),
+                    span({class: "input-group-text"},"in"),
+                    input({class: "input-group-text", value: "30", id: "input_start_race_offset"}),
+                    span({class: "input-group-text"},"sec")
+                    )
                 )
             );
         }
