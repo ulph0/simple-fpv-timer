@@ -19,6 +19,9 @@
      * `src/src/js/src/race/*`: Race mode specific GUI code.
      * `src/src/js/src/spectrum/*`: Spectrum analyzer specific GUI code.
 
+ * **GUI (CSS)**
+   * `src/data_src/app.css` & index.html
+   
  * **Standalone server**
  * `/src/server/ctrl-server.py`: Standalone python server to control various ESP32 SFT's.
    The javascript code is generated via `src/js/ctrl.ts` using ebuild:

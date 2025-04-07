@@ -542,6 +542,16 @@ def handle_api_v1_time(json=JSONBody()):
 
     return {'status':"ok"}
 
+@request_map("/api/v1/rssi/update", method=["GET"])
+def handle_api_v1_time():
+    return {'enable': ctx.send_rssi_updates}
+
+@request_map("/api/v1/clear_laps", method=["POST"])
+def handle_api_v1_clear_laps(json=JSONBody()):
+    for p in ctx.players:
+        p.clearLaps()
+    return {'status': 'ok'}
+
 @request_map("/{file}", method="GET")
 def default_static(file = PathValue()):
 
