@@ -118,6 +118,7 @@ export class SpectrumPage extends Page {
         this.getDom();
 
         document.addEventListener("SFT_RSSI", (e: CustomEventInit<RssiEvent>) => {
+            console.log("SFT_RSSI event data:", e.detail);
             const freq = e.detail?.freq; // Frequency from the event
             const s = e.detail?.data[0]?.s; // RSSI value for the frequency
             if (freq !== undefined && s !== undefined) {
