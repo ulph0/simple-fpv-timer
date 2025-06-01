@@ -1,4 +1,5 @@
 import van from "../../lib/van-1.5.2.js"
+import {Howl} from "../../lib/howler.core.min.js";
 import { Lap, Page, Player, SimpleFpvTimer } from "../../SimpleFpvTimer";
 import { format_ms } from "../../utils.js";
 const {button, div, pre, ul, li, a, table, thead, tbody, th, tr,td} = van.tags
@@ -26,6 +27,24 @@ class LapsRow {
 class LapsTable {
     headline: string[];
     laps: LapsRow[];
+
+
+    public equal(other: LapsTable) {
+        if (this.laps.length != other.laps.length)
+            return false;
+
+        for (let i = 0; i < this.laps.length; i++) {
+            const row = this.laps[i];
+            const o = other.laps[i];
+
+            if (row.lap.id != o.lap.id)
+                return false;
+
+            if (row.player.name != o.player.name)
+                return false;
+        }
+        return true;
+    }
 
     public addRow(row: LapsRow) {
         this.laps.push(row);
@@ -87,6 +106,7 @@ class LapsTable {
 export class LapsPage extends Page {
     _root: HTMLElement;
     lapsTable: LapsTable;
+    sound: Howl;
 
     private get root() {
         if (! this._root) {
@@ -101,6 +121,7 @@ export class LapsPage extends Page {
     }
 
     onPlayersUpdate(players: Player[]) {
+        var old_table = this.lapsTable;
         this.lapsTable = new LapsTable();
 
         players.forEach((player: Player) => {
@@ -112,6 +133,10 @@ export class LapsPage extends Page {
         this.lapsTable.sortByAbsTime();
 
         this.root.replaceChildren(this.lapsTable.draw());
+
+        if (!old_table.equal(this.lapsTable)) {
+            this.sound.play();
+        }
     }
 
     constructor() {
@@ -120,6 +145,8 @@ export class LapsPage extends Page {
         document.addEventListener("SFT_PLAYERS_UPDATE", (e: CustomEventInit<Player[]>) => {
             this.onPlayersUpdate(e.detail);
         })
+
+        this.sound = new Howl({src: ["round.ogg"]});
     }
 
 }
