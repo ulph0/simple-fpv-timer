@@ -254,7 +254,7 @@ static esp_err_t task_rssi_set_channel(task_rssi_t *tsk, rssi_t *rssi)
         rx5808_read_rssi(&tsk->rx5808, &adc_raw, &voltage);
     }
     */
-    //vTaskDelay(pdMS_TO_TICKS(20));
+    vTaskDelay(pdMS_TO_TICKS(20));
 
     tsk->rssi = rssi;
     return ESP_OK;
@@ -326,18 +326,16 @@ void task_rssi( void * priv )
 
         read_cnt++;
         rx5808_read_rssi(&tsk->rx5808, &adc_raw, &voltage);
-        ESP_LOGI(TAG, "ADC_RAW: %d VOLTAGE: %d FREQ: %d", adc_raw, voltage, tsk->rssi->freq);
+        //ESP_LOGI(TAG, "ADC_RAW: %d VOLTAGE: %d FREQ: %d", adc_raw, voltage, tsk->rssi->freq);
 
 
         ms = get_millis();
         task_rssi_process_rssi(tsk, &gate_blocked, voltage);
         task_rssi_collect_rssi(tsk, ms);
 
-        /* for spectrum mode we could reduce the 10 to change the freq/channel more */
-        /* often, but the first at least 2 rssi values are lower then the real ones */
-        /* due to signal stabilization maybe a fitting antenna could help */
-        /* orig: if (tsk->rssi_cnt > 1 && change_channel_counter++ > 10) { */
-            if (tsk->rssi_cnt > 1 && ++change_channel_counter > 2) {
+        /* Increase delay between channel switches to allow RX5808 to stabilize */
+        /* Only collect RSSI values after initial stabilization period */
+        if (tsk->rssi_cnt > 1 && ++change_channel_counter > 10) {
             ESP_ERROR_CHECK_WITHOUT_ABORT(task_rssi_next_channel(tsk));
             change_channel_counter = 0;
         }
