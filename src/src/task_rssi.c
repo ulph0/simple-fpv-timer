@@ -244,16 +244,7 @@ static esp_err_t task_rssi_set_channel(task_rssi_t *tsk, rssi_t *rssi)
         return e;
     }
 
-    // A loop to read RSSI values two times to get a stable value
-    // Alternative: Wait some ticks
-    // vTaskDelay(pdMS_TO_TICKS(10)); <- 10 is not, 20 seems to be enough
-    /* 
-    int adc_raw = 0;
-    int voltage = 0;
-    for (int i = 0; i < 2; i++) {
-        rx5808_read_rssi(&tsk->rx5808, &adc_raw, &voltage);
-    }
-    */
+    // add a delay to allow the channel to settle
     vTaskDelay(pdMS_TO_TICKS(20));
 
     tsk->rssi = rssi;
