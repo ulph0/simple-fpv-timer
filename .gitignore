@@ -16,3 +16,4 @@ src/.cache
 src/src/config_default.c
 src/config.json
 simple-fpv-timer.code-workspace
+.github/copilot-instructions.md
