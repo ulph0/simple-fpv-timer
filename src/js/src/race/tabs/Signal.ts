@@ -196,22 +196,37 @@ function moveTheasholdPlugin(signal_page: SignalPage) {
 
     function init(u: uPlot){
         let over = u.over;
+        let touch_active = false;
 
         over.addEventListener('touchstart', (e) => {
+            touch_active = true;
             let rect = over.getBoundingClientRect();
-            startDrag(e.touches[0].clientY - rect.y);
-            e.preventDefault();
-        }, { passive: false });
+            if (startDrag(e.touches[0].clientY - rect.y)) {
+                /* Grabbed a line: block uPlot's pan/cursor handling */
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, { passive: false, capture: true });
 
         over.addEventListener('touchmove', (e) => {
+            if (!m_axis) return; /* No line grabbed: let uPlot/browser handle it */
             let rect = over.getBoundingClientRect();
             updateDrag(e.touches[0].clientY - rect.y);
             e.preventDefault();
-        }, { passive: false });
+            e.stopPropagation();
+        }, { passive: false, capture: true });
 
         over.addEventListener('touchend',  (e) => {
-            endDrag();
-            e.preventDefault();
+            touch_active = false;
+            if (endDrag()) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, { passive: false, capture: true });
+
+        over.addEventListener('touchcancel', (_e) => {
+            touch_active = false;
+            abortDrag();
         }, { passive: false });
 
         over.addEventListener("mouseup", () => {
@@ -224,7 +239,7 @@ function moveTheasholdPlugin(signal_page: SignalPage) {
         });
 
         over.addEventListener("mouseleave", () => {
-            abortDrag();
+            if (!touch_active) abortDrag();
         });
     }
 
