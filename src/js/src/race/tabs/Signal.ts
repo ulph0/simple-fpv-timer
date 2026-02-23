@@ -137,6 +137,7 @@ function moveTheasholdPlugin(signal_page: SignalPage) {
                 });
                 cfg.save({show_success_message: false});
                 m_axis = null;
+                signal_page.onNextValues();
                 return true;
             }
             return false;
@@ -148,8 +149,8 @@ function moveTheasholdPlugin(signal_page: SignalPage) {
                 signal_page.cfg.rssi[0].peak = cfg.rssi[0].peak;
                 signal_page.cfg.rssi[0].offset_enter = cfg.rssi[0].offset_enter;
                 signal_page.cfg.rssi[0].offset_leave = cfg.rssi[0].offset_leave;
-                signal_page.onNextValues();
                 m_axis = null;
+                signal_page.onNextValues();
             });
         }
 
@@ -247,10 +248,36 @@ function moveTheasholdPlugin(signal_page: SignalPage) {
         updateDrag(u.cursor.top);
     }
 
+    function drawSeries(u: uPlot, i: number) {
+        const dragIdx = m_axis === 'peak' ? 1 : m_axis === 'enter' ? 2 : m_axis === 'leave' ? 3 : -1;
+        if (i !== dragIdx || !signal_page.cfg) return;
+
+        const rssi = signal_page.cfg.rssi[0];
+        const yVal = m_axis === 'peak'  ? rssi.peak
+                   : m_axis === 'enter' ? rssi.offset_enter / 100 * rssi.peak
+                                        : rssi.offset_leave  / 100 * rssi.peak;
+
+        const ctx = u.ctx;
+        const s = u.series[i];
+        const yPos = u.valToPos(yVal, 'y', true);
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = s.stroke as string;
+        ctx.lineWidth = 5;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#ffffe0';
+        ctx.moveTo(u.bbox.left, yPos);
+        ctx.lineTo(u.bbox.left + u.bbox.width, yPos);
+        ctx.stroke();
+        ctx.restore();
+    }
+
 	return {
 		hooks: {
             init,
             setCursor,
+            drawSeries,
 		}
 	};
 }
