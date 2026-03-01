@@ -169,56 +169,35 @@ def load_default_config(source, target, env):
         fdst.write("}")
 
 
+def build_js_app(source, target, env):
+    """Build the TypeScript app using esbuild"""
+    proj_dir = Path(env.get("PROJECT_DIR"))
+    js_dir = os.path.join(proj_dir, 'js')
+    cmd = "cd {} && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(js_dir)
+    print("Building JavaScript app...")
+    subprocess.check_call(cmd, shell=True)
+
+
+def pre_build_actions(source, target, env):
+    """Run all pre-build steps: JS build -> static files -> default config"""
+    print("=== Running pre-build actions ===")
+    build_js_app(source, target, env)
+    prepare_www_files(source, target, env)
+    load_default_config(source, target, env)
+    print("=== Pre-build actions complete ===")
+
+
+# Hook into the standard PlatformIO build process
+# This runs before build/upload, making standard targets work
+env.AddPreAction("buildprog", pre_build_actions)
+
+# Optional: Keep js_server as a custom target for building the control server separately
 proj_dir = env.get("PROJECT_DIR")
-env.AddCustomTarget(
-    name="js_app",
-    dependencies=None,
-    actions=["cd {}/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir)],
-    title="esbuild src/app.ts",
-    description="esbuild src/app.ts",
-    always_build=True,
-)
-
-env.AddCustomTarget(
-    name="static_files_h",
-    dependencies=["js_app"],
-    actions=prepare_www_files,
-    title="Generate Header",
-    description="Generates a header file static_files.h",
-    always_build=True,
-)
-
-env.AddCustomTarget(
-    name="default_config_c",
-    dependencies=["static_files_h"],
-    actions=load_default_config,
-    title="Create default config",
-    description="Generates config_default.c",
-    always_build=True,
-)
-
-# forward option --upload-port
-up_port = env.get('UPLOAD_PORT')
-if up_port is None:
-    up_port = ""
-else:
-    up_port = "--upload-port {}".format(up_port)
-
-
-env.AddCustomTarget(
-    name="update_fw",
-    dependencies=["default_config_c"],
-    actions=["pio run -t upload {}".format(up_port)],
-    title="Update firmware",
-    description="Do what ever is needed and update the ESP32",
-    always_build=False,
-)
-
 env.AddCustomTarget(
     name="js_server",
     dependencies=None,
     actions=["cd {}/js && esbuild src/ctrld.ts --bundle --outfile=../server/www/ctrld.js --minify --target=esnext --sourcemap".format(proj_dir)],
     title="esbuild src/ctrld.ts",
-    description="esbuild src/ctrld.ts",
+    description="Build control server JavaScript",
     always_build=True,
 )
