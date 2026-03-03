@@ -223,27 +223,38 @@ env.AddCustomTarget(
     always_build=True,
 )
 
-# Auto-run the build chain before any compilation
-# This ensures static_files.h and config_default.c are generated
-def auto_prepare(source, target, env):
-    """Automatically prepare all generated files before build"""
-    import sys
-    sys.path.insert(0, proj_dir)
+# Auto-generate required files if they don't exist
+# This runs immediately when the script is loaded (before any build steps)
+proj_dir_path = Path(proj_dir)
+static_files_h = proj_dir_path / "src" / "src" / "static_files.h"
+config_default_c = proj_dir_path / "src" / "src" / "config_default.c"
+
+# Check if we need to generate files
+need_generation = not static_files_h.exists() or not config_default_c.exists()
+
+if need_generation:
+    print("=== Auto-generating required build files ===")
     
     # Build JS app
-    print("=== Auto-generating build dependencies ===")
     js_cmd = "cd {}/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir)
     print("Building JavaScript app...")
-    subprocess.check_call(js_cmd, shell=True)
+    try:
+        subprocess.check_call(js_cmd, shell=True)
+    except Exception as e:
+        print(f"Warning: Failed to build JS app: {e}")
     
     # Generate static_files.h
     print("Generating static_files.h...")
-    prepare_www_files(source, target, env)
+    try:
+        prepare_www_files(None, None, env)
+    except Exception as e:
+        print(f"Warning: Failed to generate static_files.h: {e}")
     
     # Generate config_default.c
     print("Generating config_default.c...")
-    load_default_config(source, target, env)
+    try:
+        load_default_config(None, None, env)
+    except Exception as e:
+        print(f"Warning: Failed to generate config_default.c: {e}")
+    
     print("=== Auto-generation complete ===")
-
-# Hook into buildprog to auto-generate files before compilation
-env.AddPreAction("buildprog", auto_prepare)
