@@ -139,7 +139,7 @@ def load_default_config(source, target, env):
     proj_dir = Path(env.get("PROJECT_DIR"))
     config_file = os.path.join(proj_dir, 'config.json')
     dst_file = os.path.join(proj_dir, 'src', 'src', 'config_default.c')
-    config_data_h = os.path.join(proj_dir, 'src', 'config_data.h')
+    config_data_h = os.path.join(proj_dir, 'src', 'src', 'config_data.h')
     default_cfg_json = {}
     config_magic = hashlib.md5(open(config_data_h,'rb').read()).hexdigest()[-8:]
 
