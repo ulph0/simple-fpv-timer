@@ -223,17 +223,18 @@ env.AddCustomTarget(
     always_build=True,
 )
 
-# Auto-generate required files if they don't exist
-# This runs immediately when the script is loaded (before any build steps)
+# Setup dependency tracking and auto-generation hooks
 proj_dir_path = Path(proj_dir)
 static_files_h = proj_dir_path / "src" / "src" / "static_files.h"
 config_default_c = proj_dir_path / "src" / "src" / "config_default.c"
+data_src_dir = proj_dir_path / "src" / "data_src"
+js_src_dir = proj_dir_path / "src" / "js" / "src"
+config_file = proj_dir_path / "config.json"
+config_data_h = proj_dir_path / "src" / "src" / "config_data.h"
 
-# Check if we need to generate files
-need_generation = not static_files_h.exists() or not config_default_c.exists()
-
-if need_generation:
-    print("=== Auto-generating required build files ===")
+def generate_all_files(source, target, env):
+    """Generate all required files"""
+    print("=== Generating required build files ===")
     
     # Build JS app
     js_cmd = "cd {}/src/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir)
@@ -258,3 +259,32 @@ if need_generation:
         print(f"Warning: Failed to generate config_default.c: {e}")
     
     print("=== Auto-generation complete ===")
+
+# Check if we need to generate files initially
+need_generation = not static_files_h.exists() or not config_default_c.exists()
+
+if need_generation:
+    generate_all_files(None, None, env)
+
+# Collect all source files that should trigger regeneration
+data_src_files = []
+if data_src_dir.exists():
+    data_src_files = list(data_src_dir.glob("*"))
+
+js_src_files = []
+if js_src_dir.exists():
+    js_src_files = list(js_src_dir.glob("*.ts"))
+
+config_deps = []
+if config_file.exists():
+    config_deps.append(str(config_file))
+if config_data_h.exists():
+    config_deps.append(str(config_data_h))
+
+# Add pre-action to regenerate files before building
+# This ensures files are regenerated when dependencies change
+env.AddPreAction("$BUILD_DIR/${PROGNAME}.elf", generate_all_files)
+
+# Declare dependencies so PlatformIO knows when to rebuild
+# This tells the build system that the firmware depends on these generated files
+env.Depends("$BUILD_DIR/${PROGNAME}.elf", [str(static_files_h), str(config_default_c)])
