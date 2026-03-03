@@ -88,6 +88,7 @@ static esp_err_t get_static_handler(httpd_req_t *req)
     return ESP_OK;
 }
 
+#ifdef CONFIG_HTTPD_WS_SUPPORT
 static esp_err_t ws_rssi_handler(httpd_req_t *req)
 {
     ESP_LOGI(TAG, "ENTER: %s", __func__);
@@ -123,6 +124,7 @@ static esp_err_t ws_rssi_handler(httpd_req_t *req)
     ESP_LOGI(TAG, "Received ws pkt length:%d %.*s", ws_pkt.len, ws_pkt.len, ws_buffer);
     return ESP_OK;
 }
+#endif // CONFIG_HTTPD_WS_SUPPORT
 
 static void request_send_json(httpd_req_t *req, const char *json, size_t len)
 {
@@ -582,6 +584,7 @@ esp_err_t gui_start(ctx_t *ctx)
     const struct static_files *sf;
     esp_err_t err;
 
+#ifdef CONFIG_HTTPD_WS_SUPPORT
     const httpd_uri_t ws = {
         .uri        = "/ws/rssi",
         .method     = HTTP_GET,
@@ -589,6 +592,7 @@ esp_err_t gui_start(ctx_t *ctx)
         .user_ctx   = NULL,
         .is_websocket = true
     };
+#endif
 
     const httpd_uri_t api_get = {
         .uri        = "/api/v1/*",
@@ -635,7 +639,9 @@ esp_err_t gui_start(ctx_t *ctx)
     }
 
 
+#ifdef CONFIG_HTTPD_WS_SUPPORT
     httpd_register_uri_handler(ctx->gui, &ws);
+#endif
     httpd_register_uri_handler(ctx->gui, &api_post);
     httpd_register_uri_handler(ctx->gui, &api_get);
 
@@ -664,6 +670,7 @@ esp_err_t gui_stop(ctx_t *ctx)
 
 esp_err_t gui_send_all(ctx_t *ctx, const char *msg)
 {
+#ifdef CONFIG_HTTPD_WS_SUPPORT
     static const size_t max_clients = CONFIG_LWIP_MAX_LISTENING_TCP;
     size_t fds = max_clients;
     int client_fds[max_clients];
@@ -689,6 +696,11 @@ esp_err_t gui_send_all(ctx_t *ctx, const char *msg)
             httpd_ws_send_frame_async(ctx->gui, client_fds[i], &ws_pkt);
         }
     }
+#else
+    // WebSocket support disabled - nothing to send
+    (void)ctx;
+    (void)msg;
+#endif
     return ESP_OK;
 }
 
