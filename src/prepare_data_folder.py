@@ -245,4 +245,5 @@ def auto_prepare(source, target, env):
     load_default_config(source, target, env)
     print("=== Auto-generation complete ===")
 
-env.AddPreAction("$BUILD_DIR/${PROGNAME}.elf", auto_prepare)
+# Hook into buildprog to auto-generate files before compilation
+env.AddPreAction("buildprog", auto_prepare)
