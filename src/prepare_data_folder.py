@@ -26,7 +26,7 @@ def prepare_www_files(source, target, env):
     proj_dir = Path(env.get("PROJECT_DIR"))
     data_src_dir = os.path.join(proj_dir, 'data_src')
     tmp_dir = os.path.join(proj_dir, 'data_tmp')
-    src_dir = os.path.join(proj_dir, 'src')
+    src_dir = os.path.join(proj_dir, 'src', 'src')
     dst_header_file = os.path.join(src_dir, "static_files.h")
 
     if(os.path.exists(tmp_dir)):
@@ -138,7 +138,7 @@ def format_value(text):
 def load_default_config(source, target, env):
     proj_dir = Path(env.get("PROJECT_DIR"))
     config_file = os.path.join(proj_dir, 'config.json')
-    dst_file = os.path.join(proj_dir, 'src', 'config_default.c')
+    dst_file = os.path.join(proj_dir, 'src', 'src', 'config_default.c')
     config_data_h = os.path.join(proj_dir, 'src', 'config_data.h')
     default_cfg_json = {}
     config_magic = hashlib.md5(open(config_data_h,'rb').read()).hexdigest()[-8:]
