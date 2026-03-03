@@ -24,7 +24,7 @@ def prepare_www_files(source, target, env):
     ignore_suffix = []
 
     proj_dir = Path(env.get("PROJECT_DIR"))
-    data_src_dir = os.path.join(proj_dir, 'data_src')
+    data_src_dir = os.path.join(proj_dir, 'src', 'data_src')
     tmp_dir = os.path.join(proj_dir, 'data_tmp')
     src_dir = os.path.join(proj_dir, 'src', 'src')
     dst_header_file = os.path.join(src_dir, "static_files.h")
@@ -173,7 +173,7 @@ proj_dir = env.get("PROJECT_DIR")
 env.AddCustomTarget(
     name="js_app",
     dependencies=None,
-    actions=["cd {}/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir)],
+    actions=["cd {}/src/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir)],
     title="esbuild src/app.ts",
     description="esbuild src/app.ts",
     always_build=True,
@@ -217,7 +217,7 @@ env.AddCustomTarget(
 env.AddCustomTarget(
     name="js_server",
     dependencies=None,
-    actions=["cd {}/js && esbuild src/ctrld.ts --bundle --outfile=../server/www/ctrld.js --minify --target=esnext --sourcemap".format(proj_dir)],
+    actions=["cd {}/src/js && esbuild src/ctrld.ts --bundle --outfile=../server/www/ctrld.js --minify --target=esnext --sourcemap".format(proj_dir)],
     title="esbuild src/ctrld.ts",
     description="esbuild src/ctrld.ts",
     always_build=True,
@@ -236,7 +236,7 @@ if need_generation:
     print("=== Auto-generating required build files ===")
     
     # Build JS app
-    js_cmd = "cd {}/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir)
+    js_cmd = "cd {}/src/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir)
     print("Building JavaScript app...")
     try:
         subprocess.check_call(js_cmd, shell=True)
