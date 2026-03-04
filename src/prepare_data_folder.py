@@ -223,16 +223,21 @@ env.AddCustomTarget(
     always_build=True,
 )
 
-# Always regenerate required files before any build starts
-# This runs immediately when the script is loaded, ensuring static_files.h
-# is up-to-date before compilation begins. PlatformIO will automatically
-# recompile any C files that depend on changed headers.
-def regenerate_build_files():
+# Setup dependency tracking and auto-generation hooks
+proj_dir_path = Path(proj_dir)
+static_files_h = proj_dir_path / "src" / "src" / "static_files.h"
+config_default_c = proj_dir_path / "src" / "src" / "config_default.c"
+data_src_dir = proj_dir_path / "src" / "data_src"
+js_src_dir = proj_dir_path / "src" / "js" / "src"
+config_file = proj_dir_path / "config.json"
+config_data_h = proj_dir_path / "src" / "src" / "config_data.h"
+
+def generate_all_files(source, target, env):
     """
-    Regenerate static_files.h and config_default.c.
-    Called unconditionally to ensure dependencies are current.
+    Generate all required files (static_files.h and config_default.c).
+    This must run before compilation starts so that C files see the latest headers.
     """
-    print("=== Regenerating build files ===")
+    print("=== Generating required build files ===")
     
     # Build JS app
     js_cmd = "cd {}/src/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir)
@@ -258,7 +263,12 @@ def regenerate_build_files():
         print(f"Error: Failed to generate config_default.c: {e}")
         raise
     
-    print("=== File regeneration complete ===")
+    print("=== Auto-generation complete ===")
 
-# Run the regeneration before every build
-regenerate_build_files()
+# Always regenerate files at script load time to ensure they're current
+# before compilation starts. PlatformIO's dependency tracking will then
+# automatically recompile C files if the headers changed.
+generate_all_files(None, None, env)
+
+# Declare dependencies so PlatformIO knows the firmware depends on these files
+env.Depends("$BUILD_DIR/${PROGNAME}.elf", [str(static_files_h), str(config_default_c)])
