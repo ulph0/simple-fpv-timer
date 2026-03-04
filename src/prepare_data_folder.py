@@ -232,14 +232,12 @@ js_src_dir = proj_dir_path / "src" / "js" / "src"
 config_file = proj_dir_path / "config.json"
 config_data_h = proj_dir_path / "src" / "src" / "config_data.h"
 
-def generate_all_files(source, target, env):
-    """
-    Generate all required files (static_files.h and config_default.c).
-    This must run before compilation starts so that C files see the latest headers.
-    """
-    print("=== Generating required build files ===")
+# Helper function that properly builds everything in order
+def build_all_generated_files(target, source, env):
+    """Build JS app, then generate static_files.h and config_default.c"""
+    proj_dir = env.get("PROJECT_DIR")
     
-    # Build JS app
+    # Step 1: Build JS app
     js_cmd = "cd {}/src/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir)
     print("Building JavaScript app...")
     try:
@@ -247,7 +245,7 @@ def generate_all_files(source, target, env):
     except Exception as e:
         print(f"Warning: Failed to build JS app: {e}")
     
-    # Generate static_files.h
+    # Step 2: Generate static_files.h
     print("Generating static_files.h...")
     try:
         prepare_www_files(None, None, env)
@@ -255,20 +253,32 @@ def generate_all_files(source, target, env):
         print(f"Error: Failed to generate static_files.h: {e}")
         raise
     
-    # Generate config_default.c
+    # Step 3: Generate config_default.c
     print("Generating config_default.c...")
     try:
         load_default_config(None, None, env)
     except Exception as e:
         print(f"Error: Failed to generate config_default.c: {e}")
         raise
-    
-    print("=== Auto-generation complete ===")
 
-# Always regenerate files at script load time to ensure they're current
-# before compilation starts. PlatformIO's dependency tracking will then
-# automatically recompile C files if the headers changed.
-generate_all_files(None, None, env)
+# Create SCons build rules that will run before compilation
+# Using env.Command with AlwaysBuild ensures these run every time
+static_files_node = env.Command(
+    target=str(static_files_h),
+    source=[],  # Empty source list since we check everything in the action
+    action=build_all_generated_files
+)
 
-# Declare dependencies so PlatformIO knows the firmware depends on these files
-env.Depends("$BUILD_DIR/${PROGNAME}.elf", [str(static_files_h), str(config_default_c)])
+# Mark it to always build (like the custom targets had always_build=True)
+env.AlwaysBuild(static_files_node)
+
+# Make compilation depend on generated files being up-to-date
+# Find all .c and .cpp files that might include static_files.h
+src_files = env.Glob("$PROJECT_SRC_DIR/*.c") + env.Glob("$PROJECT_SRC_DIR/*.cpp")
+for src in src_files:
+    env.Depends(src, static_files_node)
+
+# Generate files initially if they don't exist (for fresh clones)
+if not static_files_h.exists():
+    print("=== Initial generation for fresh clone ===")
+    build_all_generated_files(None, None, env)
