@@ -6,6 +6,10 @@
 .cursorignore
 AGENTS.md
 
+# Test artifacts
+tests/
+sft.test/
+
 # Backup files
 *.bak
 

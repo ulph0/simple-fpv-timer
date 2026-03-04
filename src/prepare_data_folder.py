@@ -238,7 +238,7 @@ static_files_h = proj_dir_path / "src" / "src" / "static_files.h"
 config_default_c = proj_dir_path / "src" / "src" / "config_default.c"
 data_src_dir = proj_dir_path / "src" / "data_src"
 js_src_dir = proj_dir_path / "src" / "js" / "src"
-config_file = proj_dir_path / "config.json"
+config_file = proj_dir_path / "src" / "config.json"
 config_data_h = proj_dir_path / "src" / "src" / "config_data.h"
 
 # Helper function that builds everything in order for standard builds
