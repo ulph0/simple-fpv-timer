@@ -223,17 +223,16 @@ env.AddCustomTarget(
     always_build=True,
 )
 
-# Auto-generate required files if they don't exist
-# This runs immediately when the script is loaded (before any build steps)
-proj_dir_path = Path(proj_dir)
-static_files_h = proj_dir_path / "src" / "src" / "static_files.h"
-config_default_c = proj_dir_path / "src" / "src" / "config_default.c"
-
-# Check if we need to generate files
-need_generation = not static_files_h.exists() or not config_default_c.exists()
-
-if need_generation:
-    print("=== Auto-generating required build files ===")
+# Always regenerate required files before any build starts
+# This runs immediately when the script is loaded, ensuring static_files.h
+# is up-to-date before compilation begins. PlatformIO will automatically
+# recompile any C files that depend on changed headers.
+def regenerate_build_files():
+    """
+    Regenerate static_files.h and config_default.c.
+    Called unconditionally to ensure dependencies are current.
+    """
+    print("=== Regenerating build files ===")
     
     # Build JS app
     js_cmd = "cd {}/src/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir)
@@ -248,13 +247,18 @@ if need_generation:
     try:
         prepare_www_files(None, None, env)
     except Exception as e:
-        print(f"Warning: Failed to generate static_files.h: {e}")
+        print(f"Error: Failed to generate static_files.h: {e}")
+        raise
     
     # Generate config_default.c
     print("Generating config_default.c...")
     try:
         load_default_config(None, None, env)
     except Exception as e:
-        print(f"Warning: Failed to generate config_default.c: {e}")
+        print(f"Error: Failed to generate config_default.c: {e}")
+        raise
     
-    print("=== Auto-generation complete ===")
+    print("=== File regeneration complete ===")
+
+# Run the regeneration before every build
+regenerate_build_files()
