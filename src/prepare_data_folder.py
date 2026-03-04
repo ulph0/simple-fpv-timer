@@ -169,11 +169,20 @@ def load_default_config(source, target, env):
         fdst.write("}")
 
 
+# Shared function to build JavaScript app
+def build_js_app(source, target, env):
+    """Build TypeScript app to JavaScript"""
+    proj_dir = env.get("PROJECT_DIR")
+    js_cmd = "cd {}/src/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir)
+    print("Building JavaScript app...")
+    subprocess.check_call(js_cmd, shell=True)
+
+
 proj_dir = env.get("PROJECT_DIR")
 env.AddCustomTarget(
     name="js_app",
     dependencies=None,
-    actions=["cd {}/src/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir)],
+    actions=build_js_app,
     title="esbuild src/app.ts",
     description="esbuild src/app.ts",
     always_build=True,
@@ -232,20 +241,17 @@ js_src_dir = proj_dir_path / "src" / "js" / "src"
 config_file = proj_dir_path / "config.json"
 config_data_h = proj_dir_path / "src" / "src" / "config_data.h"
 
-# Helper function that properly builds everything in order
+# Helper function that builds everything in order for standard builds
 def build_all_generated_files(target, source, env):
     """Build JS app, then generate static_files.h and config_default.c"""
-    proj_dir = env.get("PROJECT_DIR")
     
-    # Step 1: Build JS app
-    js_cmd = "cd {}/src/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir)
-    print("Building JavaScript app...")
+    # Step 1: Build JS app (reuse shared function)
     try:
-        subprocess.check_call(js_cmd, shell=True)
+        build_js_app(None, None, env)
     except Exception as e:
         print(f"Warning: Failed to build JS app: {e}")
     
-    # Step 2: Generate static_files.h
+    # Step 2: Generate static_files.h (reuse shared function)
     print("Generating static_files.h...")
     try:
         prepare_www_files(None, None, env)
@@ -253,7 +259,7 @@ def build_all_generated_files(target, source, env):
         print(f"Error: Failed to generate static_files.h: {e}")
         raise
     
-    # Step 3: Generate config_default.c
+    # Step 3: Generate config_default.c (reuse shared function)
     print("Generating config_default.c...")
     try:
         load_default_config(None, None, env)
