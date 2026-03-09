@@ -13,6 +13,17 @@ import re
 import time
 import hashlib
 
+# Project paths - defined once, used everywhere
+proj_dir_path = Path(env.get("PROJECT_DIR"))
+static_files_h = proj_dir_path / "src" / "src" / "static_files.h"
+config_default_c = proj_dir_path / "src" / "src" / "config_default.c"
+data_src_dir = proj_dir_path / "src" / "data_src"
+data_tmp_dir = proj_dir_path / "data_tmp"
+js_src_dir = proj_dir_path / "src" / "js" / "src"
+config_file = proj_dir_path / "src" / "config.json"
+config_data_h = proj_dir_path / "src" / "src" / "config_data.h"
+src_dir = proj_dir_path / "src" / "src"
+
 def remove_comments_regex(text):
     text = re.sub(r'//.*', '', text)
     text = re.sub(r'/\*[\s\S]*?\*/', '', text)
@@ -23,18 +34,14 @@ def prepare_www_files(source, target, env):
     filetypes_to_gzip = ['js', 'html', 'css', 'map']
     ignore_suffix = []
 
-    proj_dir = Path(env.get("PROJECT_DIR"))
-    data_src_dir = os.path.join(proj_dir, 'src', 'data_src')
-    tmp_dir = os.path.join(proj_dir, 'data_tmp')
-    src_dir = os.path.join(proj_dir, 'src', 'src')
-    dst_header_file = os.path.join(src_dir, "static_files.h")
+    dst_header_file = static_files_h
 
-    if(os.path.exists(tmp_dir)):
-        print('  Delete temproary dir {}'.format(tmp_dir))
-        shutil.rmtree(tmp_dir)
+    if(os.path.exists(data_tmp_dir)):
+        print('  Delete temproary dir {}'.format(data_tmp_dir))
+        shutil.rmtree(data_tmp_dir)
 
-    print('  Re-creating empty temporary dir {} '.format(tmp_dir))
-    os.mkdir(tmp_dir)
+    print('  Re-creating empty temporary dir {} '.format(data_tmp_dir))
+    os.mkdir(data_tmp_dir)
 
     files_to_gzip = []
     for extension in filetypes_to_gzip:
@@ -53,13 +60,13 @@ def prepare_www_files(source, target, env):
             continue
 
         print('  COPY: ' + file)
-        dst = os.path.join(tmp_dir, os.path.basename(file))
+        dst = os.path.join(data_tmp_dir, os.path.basename(file))
         shutil.copy(file, dst)
         dst_files.append(dst)
 
 
     for file in files_to_gzip:
-        dst = os.path.join(tmp_dir, os.path.basename(file) + '.gz')
+        dst = os.path.join(data_tmp_dir, os.path.basename(file) + '.gz')
         dst_files.append(dst)
         print('  GZIP: ' + file + ' -> ' + dst)
         cmd = 'gzip -9 < {S} > {D}'.format(S=file, D=dst)
@@ -125,9 +132,9 @@ const struct static_files STATIC_FILES[] = {
         fdst.write("    {.name = NULL, .data = NULL}\n};\n")
 
     # Cleanup
-    if(os.path.exists(tmp_dir)):
-        print('  Delete temproary dir {}'.format(tmp_dir))
-        shutil.rmtree(tmp_dir)
+    if(os.path.exists(data_tmp_dir)):
+        print('  Delete temproary dir {}'.format(data_tmp_dir))
+        shutil.rmtree(data_tmp_dir)
 
 def format_value(text):
     time_s = str(int(time.time()))
@@ -136,10 +143,7 @@ def format_value(text):
 
 
 def load_default_config(source, target, env):
-    proj_dir = Path(env.get("PROJECT_DIR"))
-    config_file = os.path.join(proj_dir, 'config.json')
-    dst_file = os.path.join(proj_dir, 'src', 'src', 'config_default.c')
-    config_data_h = os.path.join(proj_dir, 'src', 'src', 'config_data.h')
+    dst_file = config_default_c
     default_cfg_json = {}
     config_magic = hashlib.md5(open(config_data_h,'rb').read()).hexdigest()[-8:]
 
@@ -172,13 +176,11 @@ def load_default_config(source, target, env):
 # Shared function to build JavaScript app
 def build_js_app(source, target, env):
     """Build TypeScript app to JavaScript"""
-    proj_dir = env.get("PROJECT_DIR")
-    js_cmd = "cd {}/src/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir)
+    js_cmd = "cd {}/src/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir_path)
     print("Building JavaScript app...")
     subprocess.check_call(js_cmd, shell=True)
 
 
-proj_dir = env.get("PROJECT_DIR")
 env.AddCustomTarget(
     name="js_app",
     dependencies=None,
@@ -226,20 +228,11 @@ env.AddCustomTarget(
 env.AddCustomTarget(
     name="js_server",
     dependencies=None,
-    actions=["cd {}/src/js && esbuild src/ctrld.ts --bundle --outfile=../server/www/ctrld.js --minify --target=esnext --sourcemap".format(proj_dir)],
+    actions=["cd {}/src/js && esbuild src/ctrld.ts --bundle --outfile=../server/www/ctrld.js --minify --target=esnext --sourcemap".format(proj_dir_path)],
     title="esbuild src/ctrld.ts",
     description="esbuild src/ctrld.ts",
     always_build=True,
 )
-
-# Setup dependency tracking and auto-generation hooks
-proj_dir_path = Path(proj_dir)
-static_files_h = proj_dir_path / "src" / "src" / "static_files.h"
-config_default_c = proj_dir_path / "src" / "src" / "config_default.c"
-data_src_dir = proj_dir_path / "src" / "data_src"
-js_src_dir = proj_dir_path / "src" / "js" / "src"
-config_file = proj_dir_path / "src" / "config.json"
-config_data_h = proj_dir_path / "src" / "src" / "config_data.h"
 
 # Helper function that builds everything in order for standard builds
 def build_all_generated_files(target, source, env):
