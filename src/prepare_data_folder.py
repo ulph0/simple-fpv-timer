@@ -237,28 +237,9 @@ env.AddCustomTarget(
 # Helper function that builds everything in order for standard builds
 def build_all_generated_files(target, source, env):
     """Build JS app, then generate static_files.h and config_default.c"""
-    
-    # Step 1: Build JS app (reuse shared function)
-    try:
-        build_js_app(None, None, env)
-    except Exception as e:
-        print(f"Warning: Failed to build JS app: {e}")
-    
-    # Step 2: Generate static_files.h (reuse shared function)
-    print("Generating static_files.h...")
-    try:
-        prepare_www_files(None, None, env)
-    except Exception as e:
-        print(f"Error: Failed to generate static_files.h: {e}")
-        raise
-    
-    # Step 3: Generate config_default.c (reuse shared function)
-    print("Generating config_default.c...")
-    try:
-        load_default_config(None, None, env)
-    except Exception as e:
-        print(f"Error: Failed to generate config_default.c: {e}")
-        raise
+    build_js_app(None, None, env)
+    prepare_www_files(None, None, env)
+    load_default_config(None, None, env)
 
 # Create SCons build rules that will run before compilation
 # Using env.Command with AlwaysBuild ensures these run every time
