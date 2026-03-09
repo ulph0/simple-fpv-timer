@@ -74,10 +74,10 @@ def prepare_www_files(source, target, env):
 
     fcnt = 0;
     if os.path.exists(dst_header_file):
-        print('  Delete existing destination: ' + dst_header_file)
+        print('  Delete existing destination: ' + str(dst_header_file))
         os.remove(dst_header_file)
     with open(dst_header_file, 'a') as fdst:
-        print('  CREATE: ' + dst_header_file)
+        print('  CREATE: ' + str(dst_header_file))
         fdst.write('#include <stdio.h>\n')
 
         h_file_content = []
