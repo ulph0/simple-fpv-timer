@@ -594,16 +594,14 @@ esp_err_t gui_start(ctx_t *ctx)
         .uri        = "/api/v1/*",
         .method     = HTTP_GET,
         .handler    = api_v1_get_handler,
-        .user_ctx   = ctx,
-        .is_websocket = true
+        .user_ctx   = ctx
     };
 
     const httpd_uri_t api_post = {
         .uri        = "/api/v1/*",
         .method     = HTTP_POST,
         .handler    = api_v1_post_handler,
-        .user_ctx   = ctx,
-        .is_websocket = true
+        .user_ctx   = ctx
     };
 
     /* Generate default configuration */

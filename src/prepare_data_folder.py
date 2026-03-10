@@ -13,6 +13,17 @@ import re
 import time
 import hashlib
 
+# Project paths - defined once, used everywhere
+proj_dir_path = Path(env.get("PROJECT_DIR"))
+static_files_h = proj_dir_path / "src" / "src" / "static_files.h"
+config_default_c = proj_dir_path / "src" / "src" / "config_default.c"
+data_src_dir = proj_dir_path / "src" / "data_src"
+data_tmp_dir = proj_dir_path / "data_tmp"
+js_src_dir = proj_dir_path / "src" / "js" / "src"
+config_file = proj_dir_path / "src" / "config.json"
+config_data_h = proj_dir_path / "src" / "src" / "config_data.h"
+src_dir = proj_dir_path / "src" / "src"
+
 def remove_comments_regex(text):
     text = re.sub(r'//.*', '', text)
     text = re.sub(r'/\*[\s\S]*?\*/', '', text)
@@ -23,18 +34,14 @@ def prepare_www_files(source, target, env):
     filetypes_to_gzip = ['js', 'html', 'css', 'map']
     ignore_suffix = []
 
-    proj_dir = Path(env.get("PROJECT_DIR"))
-    data_src_dir = os.path.join(proj_dir, 'data_src')
-    tmp_dir = os.path.join(proj_dir, 'data_tmp')
-    src_dir = os.path.join(proj_dir, 'src')
-    dst_header_file = os.path.join(src_dir, "static_files.h")
+    dst_header_file = static_files_h
 
-    if(os.path.exists(tmp_dir)):
-        print('  Delete temproary dir {}'.format(tmp_dir))
-        shutil.rmtree(tmp_dir)
+    if(os.path.exists(data_tmp_dir)):
+        print('  Delete temproary dir {}'.format(data_tmp_dir))
+        shutil.rmtree(data_tmp_dir)
 
-    print('  Re-creating empty temporary dir {} '.format(tmp_dir))
-    os.mkdir(tmp_dir)
+    print('  Re-creating empty temporary dir {} '.format(data_tmp_dir))
+    os.mkdir(data_tmp_dir)
 
     files_to_gzip = []
     for extension in filetypes_to_gzip:
@@ -53,13 +60,13 @@ def prepare_www_files(source, target, env):
             continue
 
         print('  COPY: ' + file)
-        dst = os.path.join(tmp_dir, os.path.basename(file))
+        dst = os.path.join(data_tmp_dir, os.path.basename(file))
         shutil.copy(file, dst)
         dst_files.append(dst)
 
 
     for file in files_to_gzip:
-        dst = os.path.join(tmp_dir, os.path.basename(file) + '.gz')
+        dst = os.path.join(data_tmp_dir, os.path.basename(file) + '.gz')
         dst_files.append(dst)
         print('  GZIP: ' + file + ' -> ' + dst)
         cmd = 'gzip -9 < {S} > {D}'.format(S=file, D=dst)
@@ -67,10 +74,10 @@ def prepare_www_files(source, target, env):
 
     fcnt = 0;
     if os.path.exists(dst_header_file):
-        print('  Delete existing destination: ' + dst_header_file)
+        print('  Delete existing destination: ' + str(dst_header_file))
         os.remove(dst_header_file)
     with open(dst_header_file, 'a') as fdst:
-        print('  CREATE: ' + dst_header_file)
+        print('  CREATE: ' + str(dst_header_file))
         fdst.write('#include <stdio.h>\n')
 
         h_file_content = []
@@ -125,9 +132,9 @@ const struct static_files STATIC_FILES[] = {
         fdst.write("    {.name = NULL, .data = NULL}\n};\n")
 
     # Cleanup
-    if(os.path.exists(tmp_dir)):
-        print('  Delete temproary dir {}'.format(tmp_dir))
-        shutil.rmtree(tmp_dir)
+    if(os.path.exists(data_tmp_dir)):
+        print('  Delete temproary dir {}'.format(data_tmp_dir))
+        shutil.rmtree(data_tmp_dir)
 
 def format_value(text):
     time_s = str(int(time.time()))
@@ -136,10 +143,7 @@ def format_value(text):
 
 
 def load_default_config(source, target, env):
-    proj_dir = Path(env.get("PROJECT_DIR"))
-    config_file = os.path.join(proj_dir, 'config.json')
-    dst_file = os.path.join(proj_dir, 'src', 'config_default.c')
-    config_data_h = os.path.join(proj_dir, 'src', 'config_data.h')
+    dst_file = config_default_c
     default_cfg_json = {}
     config_magic = hashlib.md5(open(config_data_h,'rb').read()).hexdigest()[-8:]
 
@@ -169,11 +173,18 @@ def load_default_config(source, target, env):
         fdst.write("}")
 
 
-proj_dir = env.get("PROJECT_DIR")
+# Shared function to build JavaScript app
+def build_js_app(source, target, env):
+    """Build TypeScript app to JavaScript"""
+    js_cmd = "cd {}/src/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir_path)
+    print("Building JavaScript app...")
+    subprocess.check_call(js_cmd, shell=True)
+
+
 env.AddCustomTarget(
     name="js_app",
     dependencies=None,
-    actions=["cd {}/js && esbuild src/app.ts --bundle --outfile=../data_src/app.js --minify --target=esnext --sourcemap".format(proj_dir)],
+    actions=build_js_app,
     title="esbuild src/app.ts",
     description="esbuild src/app.ts",
     always_build=True,
@@ -217,8 +228,37 @@ env.AddCustomTarget(
 env.AddCustomTarget(
     name="js_server",
     dependencies=None,
-    actions=["cd {}/js && esbuild src/ctrld.ts --bundle --outfile=../server/www/ctrld.js --minify --target=esnext --sourcemap".format(proj_dir)],
+    actions=["cd {}/src/js && esbuild src/ctrld.ts --bundle --outfile=../server/www/ctrld.js --minify --target=esnext --sourcemap".format(proj_dir_path)],
     title="esbuild src/ctrld.ts",
     description="esbuild src/ctrld.ts",
     always_build=True,
 )
+
+# Helper function that builds everything in order for standard builds
+def build_all_generated_files(target, source, env):
+    """Build JS app, then generate static_files.h and config_default.c"""
+    build_js_app(None, None, env)
+    prepare_www_files(None, None, env)
+    load_default_config(None, None, env)
+
+# Create SCons build rules that will run before compilation
+# Using env.Command with AlwaysBuild ensures these run every time
+static_files_node = env.Command(
+    target=str(static_files_h),
+    source=[],  # Empty source list since we check everything in the action
+    action=build_all_generated_files
+)
+
+# Mark it to always build (like the custom targets had always_build=True)
+env.AlwaysBuild(static_files_node)
+
+# Make compilation depend on generated files being up-to-date
+# Find all .c and .cpp files that might include static_files.h
+src_files = env.Glob("$PROJECT_SRC_DIR/*.c") + env.Glob("$PROJECT_SRC_DIR/*.cpp")
+for src in src_files:
+    env.Depends(src, static_files_node)
+
+# Generate files initially if they don't exist (for fresh clones)
+if not static_files_h.exists():
+    print("=== Initial generation for fresh clone ===")
+    build_all_generated_files(None, None, env)
